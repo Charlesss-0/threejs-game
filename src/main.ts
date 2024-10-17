@@ -4,62 +4,96 @@ import * as THREE from 'three'
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { Player } from './player'
 import Stats from 'three/addons/libs/stats.module.js'
+import { World } from './world'
 
-const gui = new GUI()
+class MainScene {
+	private canvas: HTMLCanvasElement = document.getElementById('main-scene') as HTMLCanvasElement
+	private renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({ canvas: this.canvas })
+	private scene: THREE.Scene = new THREE.Scene()
+	private camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
+		75,
+		this.canvas.clientWidth / this.canvas.clientHeight,
+		0.1,
+		1000
+	)
+	private controls: OrbitControls = new OrbitControls(this.camera, this.renderer.domElement)
+	private stats: Stats = new Stats()
+	private gui: GUI = new GUI()
+	private world: World = new World(10, 10)
+	private player: Player = new Player()
 
-// stats
-const stats = new Stats()
-document.body.appendChild(stats.dom)
+	constructor() {
+		this.setupRenderer()
+		this.setupCamera()
+		this.setupLights()
+		this.setupControls()
+		this.setupStats()
+		this.setupGUI()
 
-// renderer setup
-const canvas = document.getElementById('canvas') as HTMLCanvasElement
-const renderer = new THREE.WebGLRenderer({ canvas })
-renderer.setSize(canvas.clientWidth, canvas.clientHeight)
+		this.scene.add(this.world)
+		this.scene.add(this.player)
 
-// scene setup
-const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000)
+		this.requestAnimation = this.requestAnimation.bind(this)
+	}
 
-// light setup
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
-directionalLight.position.set(1, 1, 1)
-scene.add(directionalLight, ambientLight)
+	private setupRenderer() {
+		this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight)
+		this.renderer.setPixelRatio(window.devicePixelRatio)
+	}
 
-// geometry and material setup
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-const material = new THREE.MeshStandardMaterial({ color: 0x00eeff })
-const cube = new THREE.Mesh(geometry, material)
-scene.add(cube)
-camera.position.z = 5
+	private setupCamera() {
+		this.camera.position.set(0, 5, 0)
+	}
 
-// controls setup
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.dampingFactor = 0.25
-controls.enablePan = false
-controls.enableRotate = true
-controls.update()
+	private setupLights() {
+		const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 3)
+		directionalLight.position.set(4, 5, 4)
+		this.scene.add(directionalLight, ambientLight)
+	}
 
-// animation loop
-function animate() {
-	requestAnimationFrame(animate)
+	private setupControls() {
+		this.controls.target.set(5, 0, 5)
+		this.controls.enableDamping = true
+		this.controls.dampingFactor = 0.25
+		this.controls.enablePan = false
+		this.controls.enableRotate = true
+		this.controls.update()
+	}
 
-	controls.update()
-	stats.update()
+	private setupStats() {
+		document.body.appendChild(this.stats.dom)
+	}
 
-	renderer.render(scene, camera)
+	private setupGUI() {
+		const worldControls = this.gui.addFolder('Terrain')
+		worldControls.add(this.world, 'width', 1, 40, 1).name('Height')
+		worldControls.add(this.world, 'height', 1, 40, 1).name('Width')
+		worldControls.add(this.world, 'treeCount', 1, 50, 1).name('Trees')
+		worldControls.add(this.world, 'rockCount', 1, 50, 1).name('Rocks')
+		worldControls.add(this.world, 'bushCount', 1, 50, 1).name('Bushes')
+		worldControls.add(this.world, 'generateWorld').name('Generate World')
+	}
+
+	public onWindowResize() {
+		this.camera.aspect = window.innerWidth / window.innerHeight
+		this.camera.updateProjectionMatrix()
+		this.renderer.setSize(window.innerWidth, window.innerHeight)
+	}
+
+	public requestAnimation() {
+		requestAnimationFrame(this.requestAnimation)
+
+		this.controls.update()
+		this.stats.update()
+
+		this.renderer.render(this.scene, this.camera)
+	}
 }
 
-window.addEventListener('resize', () => {
-	camera.aspect = window.innerWidth / window.innerHeight
-	camera.updateProjectionMatrix()
-	renderer.setSize(window.innerWidth, window.innerHeight)
-})
+const mainScene = new MainScene()
+mainScene.requestAnimation()
 
-const folder = gui.addFolder('Cube')
-folder.add(cube.position, 'x', -2, 2, 0.1).name('X')
-folder.addColor(cube.material, 'color')
-
-animate()
+window.addEventListener('resize', () => mainScene.onWindowResize())
