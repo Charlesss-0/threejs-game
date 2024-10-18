@@ -40,6 +40,7 @@ export class Player extends THREE.Mesh {
 			this.position.set(selectedCoords.x + 0.5, 0.5, selectedCoords.y + 0.5)
 
 			search(selectedCoords, null, this.world)
+			console.log(selectedCoords)
 		}
 	}
 }

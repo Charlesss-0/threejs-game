@@ -3,7 +3,7 @@ import * as THREE from 'three'
 export class World extends THREE.Group {
 	private textureLoader = new THREE.TextureLoader()
 	private gridTexture: THREE.Texture = this.textureLoader.load('textures/grid.png')
-	private positionMap = new Map<string, { position: THREE.Vector2; radius: number }>()
+	private positionMap = new Map<string, THREE.Mesh>()
 	public terrain: THREE.Mesh = new THREE.Mesh()
 	public width: number
 	public height: number
@@ -94,45 +94,28 @@ export class World extends THREE.Group {
 		this.add(this.terrain)
 	}
 
-	private isPositionValid(newPos: THREE.Vector2, radius: number) {
-		for (let [_key, value] of this.positionMap) {
-			const { position: existingPos, radius: existingRadius } = value
-			const distance = newPos.distanceTo(existingPos)
-
-			if (distance < radius + existingRadius) {
-				return false
-			}
-		}
-
-		return true
-	}
-
 	private createTrees() {
 		const treeRadius = 0.2
 		const treeHeight = 1
 
+		const treeGeometry = new THREE.ConeGeometry(treeRadius, treeHeight, 8)
 		const treeMaterial = new THREE.MeshStandardMaterial({ color: 0x1a5319, flatShading: true })
 
 		for (let i = 0; i < this.treeCount; i++) {
-			const treeGeometry = new THREE.ConeGeometry(treeRadius, treeHeight, 8)
+			let coords = new THREE.Vector2(
+				Math.floor(this.width * Math.random()),
+				Math.floor(this.height * Math.random())
+			)
+
+			if (this.positionMap.has(this.getKey(coords))) continue
+
 			const treeMesh = new THREE.Mesh(treeGeometry, treeMaterial)
-
-			let coords: THREE.Vector2
-
-			do {
-				coords = new THREE.Vector2(
-					Math.floor(this.width * Math.random()),
-					Math.floor(this.height * Math.random())
-				)
-			} while (!this.isPositionValid(coords, treeRadius))
-
+			treeMesh.name = `Tree-(${coords.x},${coords.y})`
 			treeMesh.position.set(coords.x + 0.5, treeHeight / 2, coords.y + 0.5)
 
 			this.trees.add(treeMesh)
-			this.positionMap.set(this.getKey(coords), {
-				position: coords,
-				radius: treeRadius,
-			})
+
+			this.positionMap.set(this.getKey(coords), treeMesh)
 		}
 
 		this.add(this.trees)
@@ -150,25 +133,23 @@ export class World extends THREE.Group {
 			const rockRadius = minRockRadius + Math.random() * (maxRockRadius - minRockRadius)
 			const rockHeight = minRockHeight + Math.random() * (maxRockHeight - minRockHeight)
 
+			let coords = new THREE.Vector2(
+				Math.floor(this.width * Math.random()),
+				Math.floor(this.height * Math.random())
+			)
+
+			if (this.positionMap.has(this.getKey(coords))) continue
+
 			const rockGeometry = new THREE.SphereGeometry(rockRadius, 6, 5)
 			const rockMesh = new THREE.Mesh(rockGeometry, rockMaterial)
-
-			let coords: THREE.Vector2
-
-			do {
-				coords = new THREE.Vector2(
-					Math.floor(Math.random() * this.width),
-					Math.floor(Math.random() * this.height)
-				)
-			} while (!this.isPositionValid(coords, rockRadius))
+			rockMesh.name = `Rock-(${coords.x},${coords.y})`
 
 			rockMesh.position.set(coords.x + 0.5, 0, coords.y + 0.5)
+
 			rockMesh.scale.y = rockHeight
 			this.rocks.add(rockMesh)
-			this.positionMap.set(this.getKey(coords), {
-				position: coords,
-				radius: rockRadius,
-			})
+
+			this.positionMap.set(this.getKey(coords), rockMesh)
 		}
 
 		this.add(this.rocks)
@@ -183,24 +164,20 @@ export class World extends THREE.Group {
 		for (let i = 0; i < this.bushCount; i++) {
 			const bushRadius = minBushRadius + Math.random() * (maxBushRadius - minBushRadius)
 
+			let coords = new THREE.Vector2(
+				Math.floor(this.width * Math.random()),
+				Math.floor(this.height * Math.random())
+			)
+
+			if (this.positionMap.has(this.getKey(coords))) continue
+
 			const bushGeometry = new THREE.SphereGeometry(bushRadius, 10, 10)
 			const bushMesh = new THREE.Mesh(bushGeometry, bushMaterial)
-
-			let coords: THREE.Vector2
-
-			do {
-				coords = new THREE.Vector2(
-					Math.floor(Math.random() * this.width),
-					Math.floor(Math.random() * this.height)
-				)
-			} while (!this.isPositionValid(coords, bushRadius))
-
+			bushMesh.name = `Bush-(${coords.x},${coords.y})`
 			bushMesh.position.set(coords.x + 0.5, bushRadius / 2, coords.y + 0.5)
 			this.bushes.add(bushMesh)
-			this.positionMap.set(this.getKey(coords), {
-				position: coords,
-				radius: bushRadius,
-			})
+
+			this.positionMap.set(this.getKey(coords), bushMesh)
 		}
 
 		this.add(this.bushes)
