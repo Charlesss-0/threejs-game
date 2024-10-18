@@ -1,19 +1,20 @@
 import * as THREE from 'three'
 
 export class World extends THREE.Group {
-	private textureLoader = new THREE.TextureLoader()
-	private gridTexture: THREE.Texture = this.textureLoader.load('textures/grid.png')
-	private positionMap = new Map<string, THREE.Mesh>()
 	public terrain: THREE.Mesh = new THREE.Mesh()
 	public width: number
 	public height: number
 	public treeCount: number
 	public rockCount: number
 	public bushCount: number
+	public path: THREE.Group = new THREE.Group()
+
+	private textureLoader = new THREE.TextureLoader()
+	private gridTexture: THREE.Texture = this.textureLoader.load('textures/grid.png')
+	private positionMap = new Map<string, THREE.Mesh>()
 	private trees: THREE.Group = new THREE.Group()
 	private rocks: THREE.Group = new THREE.Group()
 	private bushes: THREE.Group = new THREE.Group()
-
 	private getKey = (coords: THREE.Vector2) => `${coords.x}-${coords.y}`
 
 	constructor(width: number, height: number) {
