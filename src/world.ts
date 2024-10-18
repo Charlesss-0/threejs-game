@@ -1,17 +1,20 @@
 import * as THREE from 'three'
 
 export class World extends THREE.Group {
+	private textureLoader = new THREE.TextureLoader()
+	private gridTexture: THREE.Texture = this.textureLoader.load('textures/grid.png')
 	private positionMap = new Map<string, { position: THREE.Vector2; radius: number }>()
-
-	width: number
-	height: number
+	public terrain: THREE.Mesh = new THREE.Mesh()
+	public width: number
+	public height: number
 	public treeCount: number
 	public rockCount: number
 	public bushCount: number
-	private terrain: THREE.Mesh = new THREE.Mesh()
 	private trees: THREE.Group = new THREE.Group()
 	private rocks: THREE.Group = new THREE.Group()
 	private bushes: THREE.Group = new THREE.Group()
+
+	private getKey = (coords: THREE.Vector2) => `${coords.x}-${coords.y}`
 
 	constructor(width: number, height: number) {
 		super()
@@ -32,7 +35,7 @@ export class World extends THREE.Group {
 		this.createBushes()
 	}
 
-	private clearWorld() {
+	private clearTerrain() {
 		if (this.terrain) {
 			this.terrain.geometry.dispose()
 			this.remove(this.terrain)
@@ -71,21 +74,23 @@ export class World extends THREE.Group {
 		this.positionMap.clear()
 	}
 
-	private createTerrain() {
-		this.clearWorld()
+	createTerrain() {
+		this.clearTerrain()
 
-		const terrainMaterial = new THREE.MeshStandardMaterial({ color: 0x508d4e })
-		const terrainGeometry = new THREE.PlaneGeometry(
-			this.width,
-			this.height,
-			this.width,
-			this.height
-		)
+		this.gridTexture.repeat = new THREE.Vector2(this.width, this.height)
+		this.gridTexture.wrapS = THREE.RepeatWrapping
+		this.gridTexture.wrapT = THREE.RepeatWrapping
+		this.gridTexture.colorSpace = THREE.SRGBColorSpace
+
+		const terrainMaterial = new THREE.MeshStandardMaterial({
+			map: this.gridTexture,
+		})
+
+		const terrainGeometry = new THREE.BoxGeometry(this.width, 0.1, this.height)
+
 		this.terrain = new THREE.Mesh(terrainGeometry, terrainMaterial)
-
-		this.terrain.position.set(this.width / 2, 0, this.height / 2)
-		this.terrain.rotation.x = -Math.PI / 2
-
+		this.terrain.name = 'Terrain'
+		this.terrain.position.set(this.width / 2, -0.05, this.height / 2)
 		this.add(this.terrain)
 	}
 
@@ -116,15 +121,18 @@ export class World extends THREE.Group {
 
 			do {
 				coords = new THREE.Vector2(
-					Math.floor(Math.random() * this.width),
-					Math.floor(Math.random() * this.height)
+					Math.floor(this.width * Math.random()),
+					Math.floor(this.height * Math.random())
 				)
 			} while (!this.isPositionValid(coords, treeRadius))
 
 			treeMesh.position.set(coords.x + 0.5, treeHeight / 2, coords.y + 0.5)
 
 			this.trees.add(treeMesh)
-			this.positionMap.set(`${coords.x}-${coords.y}`, { position: coords, radius: treeRadius })
+			this.positionMap.set(this.getKey(coords), {
+				position: coords,
+				radius: treeRadius,
+			})
 		}
 
 		this.add(this.trees)
@@ -157,7 +165,10 @@ export class World extends THREE.Group {
 			rockMesh.position.set(coords.x + 0.5, 0, coords.y + 0.5)
 			rockMesh.scale.y = rockHeight
 			this.rocks.add(rockMesh)
-			this.positionMap.set(`${coords.x}-${coords.y}`, { position: coords, radius: rockRadius })
+			this.positionMap.set(this.getKey(coords), {
+				position: coords,
+				radius: rockRadius,
+			})
 		}
 
 		this.add(this.rocks)
@@ -167,7 +178,7 @@ export class World extends THREE.Group {
 		const minBushRadius = 0.1
 		const maxBushRadius = 0.3
 
-		const bushMaterial = new THREE.MeshStandardMaterial({ color: 0x416d19, flatShading: true })
+		const bushMaterial = new THREE.MeshStandardMaterial({ color: 0x87a922, flatShading: true })
 
 		for (let i = 0; i < this.bushCount; i++) {
 			const bushRadius = minBushRadius + Math.random() * (maxBushRadius - minBushRadius)
@@ -186,9 +197,16 @@ export class World extends THREE.Group {
 
 			bushMesh.position.set(coords.x + 0.5, bushRadius / 2, coords.y + 0.5)
 			this.bushes.add(bushMesh)
-			this.positionMap.set(`${coords.x}-${coords.y}`, { position: coords, radius: bushRadius })
+			this.positionMap.set(this.getKey(coords), {
+				position: coords,
+				radius: bushRadius,
+			})
 		}
 
 		this.add(this.bushes)
+	}
+
+	public getObject(coords: THREE.Vector2) {
+		return this.positionMap.get(this.getKey(coords)) ?? null
 	}
 }

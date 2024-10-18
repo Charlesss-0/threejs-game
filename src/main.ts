@@ -22,20 +22,25 @@ class MainScene {
 	private stats: Stats = new Stats()
 	private gui: GUI = new GUI()
 	private world: World = new World(10, 10)
-	private player: Player = new Player()
+	private player: Player = new Player(this.camera, this.world)
 
 	constructor() {
+		this.createScene()
+
+		this.scene.add(this.world)
+		this.scene.add(this.player)
+
+		this.requestAnimation = this.requestAnimation.bind(this)
+		window.addEventListener('resize', this.onWindowResize.bind(this))
+	}
+
+	private createScene() {
 		this.setupRenderer()
 		this.setupCamera()
 		this.setupLights()
 		this.setupControls()
 		this.setupStats()
 		this.setupGUI()
-
-		this.scene.add(this.world)
-		this.scene.add(this.player)
-
-		this.requestAnimation = this.requestAnimation.bind(this)
 	}
 
 	private setupRenderer() {
@@ -44,7 +49,7 @@ class MainScene {
 	}
 
 	private setupCamera() {
-		this.camera.position.set(0, 5, 0)
+		this.camera.position.set(0, 2, 0)
 	}
 
 	private setupLights() {
@@ -55,7 +60,7 @@ class MainScene {
 	}
 
 	private setupControls() {
-		this.controls.target.set(5, 0, 5)
+		this.controls.target.set(5, 0.5, 5)
 		this.controls.enableDamping = true
 		this.controls.dampingFactor = 0.25
 		this.controls.enablePan = false
@@ -68,13 +73,13 @@ class MainScene {
 	}
 
 	private setupGUI() {
-		const worldControls = this.gui.addFolder('Terrain')
-		worldControls.add(this.world, 'width', 1, 40, 1).name('Height')
-		worldControls.add(this.world, 'height', 1, 40, 1).name('Width')
-		worldControls.add(this.world, 'treeCount', 1, 50, 1).name('Trees')
-		worldControls.add(this.world, 'rockCount', 1, 50, 1).name('Rocks')
-		worldControls.add(this.world, 'bushCount', 1, 50, 1).name('Bushes')
-		worldControls.add(this.world, 'generateWorld').name('Generate World')
+		const worldFolder = this.gui.addFolder('Terrain')
+		worldFolder.add(this.world, 'width', 1, 40, 1).name('Height')
+		worldFolder.add(this.world, 'height', 1, 40, 1).name('Width')
+		worldFolder.add(this.world, 'treeCount', 1, 50, 1).name('Trees')
+		worldFolder.add(this.world, 'rockCount', 1, 50, 1).name('Rocks')
+		worldFolder.add(this.world, 'bushCount', 1, 50, 1).name('Bushes')
+		worldFolder.add(this.world, 'generateWorld').name('Generate World')
 	}
 
 	public onWindowResize() {
@@ -95,5 +100,3 @@ class MainScene {
 
 const mainScene = new MainScene()
 mainScene.requestAnimation()
-
-window.addEventListener('resize', () => mainScene.onWindowResize())
